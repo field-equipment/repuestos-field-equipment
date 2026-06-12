@@ -26,12 +26,13 @@
   .card{background:white;border-radius:12px;overflow:hidden;box-shadow:var(--shadow);transition:transform .2s,box-shadow .2s;cursor:pointer;border:1.5px solid transparent}
   .card:hover{transform:translateY(-3px);box-shadow:0 6px 20px rgba(59,122,46,.18);border-color:var(--green)}
   .card.critico{border-left:4px solid #e53935}
-  .card-img-wrap{width:100%;height:190px;background:#f8f8f8;border-bottom:1px solid #eee;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .card-img-wrap{width:100%;height:190px;background:#f8f8f8;border-bottom:1px solid #eee;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
   .card-img{width:100%;height:100%;object-fit:contain;padding:8px;transition:transform .3s}
   .card:hover .card-img{transform:scale(1.04)}
   .card-img-placeholder{color:#bbb;font-size:13px;text-align:center}
+  .critico-img-badge{position:absolute;top:8px;right:8px;background:#e53935;color:white;font-size:10px;font-weight:800;padding:3px 8px;border-radius:10px;z-index:2}
   .card-body{padding:14px 16px}
-  .card-id{font-size:11px;color:var(--green);font-weight:700;text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin-bottom:4px}
+  .card-id{font-size:11px;color:var(--green);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
   .card-title{font-size:14px;font-weight:700;margin:0 0 8px;line-height:1.3}
   .card-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
   .tag{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:600}
@@ -42,7 +43,6 @@
   .card-meta{font-size:12px;color:#777}
   .meta-row{display:flex;justify-content:space-between;margin-top:3px}
   .stock-ok{color:#2e7d32;font-weight:700}.stock-low{color:#e65100;font-weight:700}
-  .critico-badge{background:#ffebee;color:#c62828;font-size:10px;font-weight:800;padding:2px 8px;border-radius:10px}
   .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;align-items:center;justify-content:center}
   .modal-overlay.open{display:flex}
   .modal{background:white;border-radius:16px;max-width:700px;width:96%;max-height:93vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.28);animation:fadeIn .18s}
@@ -90,12 +90,6 @@
   <div class="filter-group"><label>Grupo por Tipo</label><select id="f-tipo" onchange="applyFilters()"><option value="">Todos</option></select></div>
   <div class="filter-group"><label>Grupo por Equipo</label><select id="f-equipo" onchange="applyFilters()"><option value="">Todos</option></select></div>
   <div class="filter-group"><label>Ubicación</label><select id="f-ubicacion" onchange="applyFilters()"><option value="">Todas</option></select></div>
-  <div class="filter-group"><label>Solo Críticos</label>
-    <select id="f-critico" onchange="applyFilters()">
-      <option value="">Todos</option>
-      <option value="si">⚠ Solo críticos</option>
-    </select>
-  </div>
   <button class="btn btn-clear" onclick="clearFilters()">✕ Limpiar</button>
 </div>
 <div class="results-info">Mostrando <span id="showing-count">0</span> de <span id="total-count">0</span> repuestos</div>
@@ -127,7 +121,6 @@ function applyFilters(){
   const fT=norm(document.getElementById('f-tipo').value);
   const fE=norm(document.getElementById('f-equipo').value);
   const fU=norm(document.getElementById('f-ubicacion').value);
-  const fC=document.getElementById('f-critico').value;
   filtered=ALL_DATA.filter(r=>{
     if(iR&&!norm(r['IDENTIFICACIÓN DE REPUESTO']).includes(iR))return false;
     if(fI&&!norm(r['ID']).includes(fI))return false;
@@ -136,14 +129,13 @@ function applyFilters(){
     if(fT&&norm(r['GRUPO POR TIPO'])!==fT)return false;
     if(fE&&norm(r['GRUPO POR EQUIPO'])!==fE)return false;
     if(fU&&norm(r['UBICACIÓN'])!==fU)return false;
-    if(fC==='si'&&!r['REPUESTO CRITICO'])return false;
     return true;
   });
   currentPage=1;render();
 }
 function clearFilters(){
   ['f-idrepuesto','f-id','f-desc'].forEach(id=>document.getElementById(id).value='');
-  ['f-marca','f-tipo','f-equipo','f-ubicacion','f-critico'].forEach(id=>document.getElementById(id).value='');
+  ['f-marca','f-tipo','f-equipo','f-ubicacion'].forEach(id=>document.getElementById(id).value='');
   applyFilters();
 }
 function stockClass(t,m){if(!m||m==='')return'stock-ok';return parseFloat(t)>=parseFloat(m)?'stock-ok':'stock-low'}
@@ -163,12 +155,11 @@ function render(){
     const img=r['_img_url'];
     const iC=r['REPUESTO CRITICO']===true;
     const sc=stockClass(r['STOCK TOTAL'],r['STOCK MÍNIMO']);
-    const ih=img?`<div class="card-img-wrap"><img class="card-img" src="${img}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\"card-img-placeholder\">📷 Sin imagen</div>'"></div>`:`<div class="card-img-wrap"><div class="card-img-placeholder">📷 Sin imagen</div></div>`;
+    const ih=img
+      ? `<div class="card-img-wrap">${iC?'<span class="critico-img-badge">⚠ CRÍTICO</span>':''}<img class="card-img" src="${img}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\"card-img-placeholder\">📷 Sin imagen</div>'"></div>`
+      : `<div class="card-img-wrap">${iC?'<span class="critico-img-badge">⚠ CRÍTICO</span>':''}<div class="card-img-placeholder">📷 Sin imagen</div></div>`;
     return `<div class="card${iC?' critico':''}" onclick="openModal(${gi})">${ih}<div class="card-body">
-      <div class="card-id">
-        <span>#${r['IDENTIFICACIÓN DE REPUESTO']||'—'}${r['ID']&&r['ID']!=='nan'?' · '+r['ID']:''}</span>
-        ${iC?'<span class="critico-badge">⚠ CRÍTICO</span>':''}
-      </div>
+      <div class="card-id">#${r['IDENTIFICACIÓN DE REPUESTO']||'—'}${r['ID']&&r['ID']!=='nan'?' · '+r['ID']:''}</div>
       <div class="card-title">${r['DESCRIPCIÓN']||r['Producto']||'(Sin descripción)'}</div>
       <div class="card-tags">
         ${r['GRUPO POR TIPO']&&r['GRUPO POR TIPO']!=='nan'&&r['GRUPO POR TIPO']!=='None'?`<span class="tag tag-tipo">${r['GRUPO POR TIPO']}</span>`:''}
@@ -199,7 +190,9 @@ function openModal(idx){
   const sc=stockClass(r['STOCK TOTAL'],r['STOCK MÍNIMO']);
   const img=r['_img_url'];
   document.getElementById('modal-title').textContent=(r['DESCRIPCIÓN']||r['Producto']||'Repuesto')+(iC?' ⚠ CRÍTICO':'');
-  const ih=img?`<div class="modal-img-wrap"><img class="modal-img" src="${img}" onclick="openLightbox('${img}')" onerror="this.parentElement.innerHTML='<div class=\"modal-img-placeholder\">📷 Sin imagen</div>'"></div>`:`<div class="modal-img-wrap"><div class="modal-img-placeholder">📷 Sin imagen</div></div>`;
+  const ih=img
+    ?`<div class="modal-img-wrap"><img class="modal-img" src="${img}" onclick="openLightbox('${img}')" onerror="this.parentElement.innerHTML='<div class=\"modal-img-placeholder\">📷 Sin imagen</div>'"></div>`
+    :`<div class="modal-img-wrap"><div class="modal-img-placeholder">📷 Sin imagen</div></div>`;
   const safe=v=>String(v??'').replace(/</g,'&lt;');
   document.getElementById('modal-content').innerHTML=`${ih}<div class="modal-body"><div class="detail-grid">
     <div class="section-title">Identificación</div>
